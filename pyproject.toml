@@ -1,0 +1,13 @@
+[project]
+name = "accounting-suite"
+version = "0.1.0"
+description = "Automated Streamlit app for filling monthly accounting Excel templates."
+requires-python = ">=3.9"
+dependencies = [
+    "streamlit",
+    "pandas",
+    "openpyxl",
+    "xlrd",
+    "workalendar"
+]
+ 
