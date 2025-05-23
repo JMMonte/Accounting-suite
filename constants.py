@@ -14,7 +14,7 @@ OBJECTIVES = [
 
 PARFOIS_ADDRESS = "Parfois S.A., Rua de Sistelo, 755 - Lugar de Santegãos, 4435-429 Rio Tinto, Portugal"
 
-EXCEL_TEMPLATE_PATH = "MG_AjudasCustoNacionais_Original_V2025.xlsx"
+EXCEL_TEMPLATE_PATH = "MapaDespesas_2025.xlsx"
 EXCEL_OUTPUT_NAME = "MapaDespesasPreenchido.xlsx"
 
 # Private information loaded from environment variables
