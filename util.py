@@ -255,58 +255,62 @@ def group_consecutive_days(filled_days):
     return trips
 
 
-def categorize_trips(trips, OBJECTIVES, PARFOIS_ADDRESS):
+def categorize_trips(trips, OBJECTIVES, CLIENT_ADDRESS):
     """
-    Categorize trips into 100%, 75%, 50%, and 25% values.
-    Excel template expects 1s in percentage columns, not actual values.
+    Categorizes trips and assigns percentage values based on trip duration.
+    Consecutive business days are treated as a single trip.
+
+    Args:
+        trips: List of trips, where each trip is a list of consecutive filled days
+        OBJECTIVES: List of possible objectives for the trips
+        CLIENT_ADDRESS: The client's address to use for trip locations
+
+    Returns:
+        List of all individual days with categorization applied
     """
-    filled_days_categorized = []
+    all_categorized_days = []
     trip_id = 0
+
     for trip in trips:
-        n = len(trip)
-        for i, d in enumerate(trip):
-            # Keep the original calculated value for reference
-            original_value = d.get("Valor (€)", 0)
-            inicio_dia_hora = ""
-            regresso_dia_hora = ""
-            objetivo = random.choice(OBJECTIVES)
-            local = PARFOIS_ADDRESS
+        trip_length = len(trip)
 
-            # Initialize all percentage values as empty
-            val_100 = val_75 = val_50 = val_25 = ""
+        # Apply the same objective to all days in the trip
+        objetivo = random.choice(OBJECTIVES)
+        local = CLIENT_ADDRESS
 
-            if n == 1:
+        for i, day in enumerate(trip):
+            # Reset all percentage columns
+            day["Valor 100% (€)"] = ""
+            day["Valor 75% (€)"] = ""
+            day["Valor 50% (€)"] = ""
+            day["Valor 25% (€)"] = ""
+
+            # Determine the percentage based on trip length and position
+            if trip_length == 1:
                 # Single day trip gets 100%
-                val_100 = 1
-                inicio_dia_hora = f"{d['Data']} {TRIP_START_TIME}"
-                regresso_dia_hora = f"{d['Data']} {TRIP_END_TIME}"
+                day["Valor 100% (€)"] = 1
+                inicio_dia_hora = f"{day['Data']} {TRIP_START_TIME}"
+                regresso_dia_hora = f"{day['Data']} {TRIP_END_TIME}"
             else:
                 if i == 0:
                     # First day of multi-day trip gets 100%
-                    val_100 = 1
-                    inicio_dia_hora = f"{d['Data']} {TRIP_START_TIME}"
-                    # First day: departure time, but still work full day
-                    regresso_dia_hora = f"{d['Data']} {TRIP_END_TIME}"
-                elif i == n - 1:
+                    day["Valor 100% (€)"] = 1
+                    inicio_dia_hora = f"{day['Data']} {TRIP_START_TIME}"
+                    regresso_dia_hora = f"{day['Data']} {TRIP_END_TIME}"
+                elif i == trip_length - 1:
                     # Last day of multi-day trip gets 25%
-                    val_25 = 1
-                    # Last day: start working, then return
-                    inicio_dia_hora = f"{d['Data']} {TRIP_START_TIME}"
-                    regresso_dia_hora = f"{d['Data']} {TRIP_END_TIME}"
+                    day["Valor 25% (€)"] = 1
+                    inicio_dia_hora = f"{day['Data']} {TRIP_START_TIME}"
+                    regresso_dia_hora = f"{day['Data']} {TRIP_END_TIME}"
                 else:
                     # Middle days of multi-day trip get 100%
-                    val_100 = 1
-                    # Middle days: full working days
-                    inicio_dia_hora = f"{d['Data']} {TRIP_START_TIME}"
-                    regresso_dia_hora = f"{d['Data']} {TRIP_END_TIME}"
+                    day["Valor 100% (€)"] = 1
+                    inicio_dia_hora = f"{day['Data']} {TRIP_START_TIME}"
+                    regresso_dia_hora = f"{day['Data']} {TRIP_END_TIME}"
 
-            filled_days_categorized.append(
+            # Add the additional required fields
+            day.update(
                 {
-                    **d,
-                    "Valor 100% (€)": val_100,
-                    "Valor 75% (€)": val_75,
-                    "Valor 50% (€)": val_50,
-                    "Valor 25% (€)": val_25,
                     "inicio (Dia Hora)": inicio_dia_hora,
                     "regresso (Dia Hora)": regresso_dia_hora,
                     "Mapa deslocação / Objectivo": objetivo,
@@ -314,5 +318,8 @@ def categorize_trips(trips, OBJECTIVES, PARFOIS_ADDRESS):
                     "_trip_id": trip_id,
                 }
             )
+
+        all_categorized_days.extend(trip)
         trip_id += 1
-    return filled_days_categorized
+
+    return all_categorized_days

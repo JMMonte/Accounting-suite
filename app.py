@@ -12,7 +12,7 @@ from util import (
 )
 from constants import (
     OBJECTIVES,
-    PARFOIS_ADDRESS,
+    CLIENT_ADDRESS,
     EXCEL_TEMPLATE_PATH,
     COMPANY_NAME,
     COMPANY_NIPC,
@@ -207,7 +207,7 @@ filled_dict = {d["Data"]: d for d in filled_days}
 
 # --- Step: Aggregate consecutive filled business days into trips ---
 trips = group_consecutive_days(filled_days)
-filled_days_categorized = categorize_trips(trips, OBJECTIVES, PARFOIS_ADDRESS)
+filled_days_categorized = categorize_trips(trips, OBJECTIVES, CLIENT_ADDRESS)
 
 filled_dict = {d["Data"]: d for d in filled_days_categorized}
 
@@ -241,7 +241,7 @@ for d in all_days:
     filled = filled_dict.get(data_str)
     if filled:
         objetivo = random.choice(OBJECTIVES)
-        local = PARFOIS_ADDRESS
+        local = CLIENT_ADDRESS
         inicio = filled.get("inicio (Dia Hora)", "")
         regresso = filled.get("regresso (Dia Hora)", "")
         valor_100 = filled.get("Valor 100% (€)", "")

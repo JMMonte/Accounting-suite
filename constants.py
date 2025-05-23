@@ -4,17 +4,25 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-OBJECTIVES = [
-    "Viagem a visitar cliente Parfois (HQ)",
-    "Reunião com cliente Parfois",
-    "Entrega de documentação a Parfois",
-    "Visita técnica a Parfois",
-    "Formação em cliente Parfois",
+# Client information loaded from environment variables (default to generic placeholders)
+DEFAULT_OBJECTIVES = [
+    "Reunião de trabalho",
+    "Visita a cliente",
+    "Entrega de documentação",
+    "Visita técnica",
+    "Formação em cliente",
 ]
 
-PARFOIS_ADDRESS = "Parfois S.A., Rua de Sistelo, 755 - Lugar de Santegãos, 4435-429 Rio Tinto, Portugal"
+# Parse objectives from environment variable (comma-separated) or use defaults
+OBJECTIVES_ENV = os.getenv("CLIENT_OBJECTIVES", "")
+if OBJECTIVES_ENV.strip():
+    OBJECTIVES = [obj.strip() for obj in OBJECTIVES_ENV.split(",") if obj.strip()]
+else:
+    OBJECTIVES = DEFAULT_OBJECTIVES
 
-EXCEL_TEMPLATE_PATH = "MapaDespesas_2025.xlsx"
+CLIENT_ADDRESS = os.getenv("CLIENT_ADDRESS", "Endereço do Cliente, Cidade, Portugal")
+
+EXCEL_TEMPLATE_PATH = os.getenv("EXCEL_TEMPLATE_PATH", "MapaDespesas_2025.xlsx")
 EXCEL_OUTPUT_NAME = "MapaDespesasPreenchido.xlsx"
 
 # Private information loaded from environment variables
