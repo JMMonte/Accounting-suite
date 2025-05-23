@@ -91,7 +91,7 @@ temp/
 tmp/
 
 # Excel output files (may contain sensitive data)
-MapaDespesas_*.xlsx
+# MapaDespesas_*.xlsx
 
 # SECURITY: Personal data and sensitive files
 # Environment files (all variants)
