@@ -3,8 +3,8 @@
 This file contains the utility functions for the app.
 
 Functions:
-- random_fill_days: Fill business days with random values,
-respecting the max_daily and max_total constraints.
+- random_fill_days: Fill business days based on max_total constraint,
+working with the Excel template's percentage-based calculation system.
 - split_dia_hora: Split a date and time string into two parts.
 - export_to_excel: Export the preview DataFrame to an Excel file.
 - group_consecutive_days: Group consecutive days into trips.
@@ -32,95 +32,120 @@ from constants import (
 )
 
 
-def _generate_random_values(n, max_daily, max_total):
+def _simulate_excel_calculation(filled_days, max_daily):
     """
-    Generate random values for the days, respecting the max_daily and max_total constraints.
+    Simulate the Excel calculation to estimate the total.
     """
-    mean = max_daily * 0.8
-    stddev = max_daily * 0.15
-    values = []
-    for _ in range(n):
-        while True:
-            value = random.gauss(mean, stddev)
-            value = max(max_daily * 0.5, min(max_daily, value))
-            value = round(value, 2)
-            if not any(abs(value - v) < 0.5 for v in values):
-                break
-        values.append(value)
-    scale = max_total / sum(values)
-    values = [round(v * scale, 2) for v in values]
-    for i, v in enumerate(values):
-        values[i] = min(v, max_daily)
-    diff = round(max_total - sum(values), 2)
-    if abs(diff) > 0.01:
-        values[-1] = round(values[-1] + diff, 2)
-    return values
+    if not filled_days:
+        return 0
+
+    # Group into trips to simulate categorize_trips behavior
+    filled_sorted = sorted(filled_days, key=lambda x: x["Data"])
+
+    # Add date objects for grouping
+    for d in filled_sorted:
+        d["_date_obj"] = datetime.strptime(d["Data"], "%Y-%m-%d").date()
+
+    # Group consecutive days
+    trips = []
+    if filled_sorted:
+        trip = [filled_sorted[0]]
+        for prev, curr in zip(filled_sorted, filled_sorted[1:]):
+            if (curr["_date_obj"] - prev["_date_obj"]).days == 1:
+                trip.append(curr)
+            else:
+                trips.append(trip)
+                trip = [curr]
+        trips.append(trip)
+
+    # Count percentages as Excel would
+    count_100 = count_75 = count_50 = count_25 = 0
+
+    for trip in trips:
+        n = len(trip)
+        for i, d in enumerate(trip):
+            if n == 1:
+                count_100 += 1
+            else:
+                if i == 0:
+                    count_100 += 1
+                elif i == n - 1:
+                    count_25 += 1
+                else:
+                    count_100 += 1
+
+    # Clean up temporary date objects
+    for d in filled_sorted:
+        if "_date_obj" in d:
+            del d["_date_obj"]
+
+    # Calculate total as Excel does
+    total = (
+        (count_100 * max_daily * 1.0)
+        + (count_75 * max_daily * 0.75)
+        + (count_50 * max_daily * 0.50)
+        + (count_25 * max_daily * 0.25)
+    )
+    return round(total, 2)
 
 
-def _fill_days_with_values(days, values):
+def random_fill_days(business_days, max_daily, max_total):
+    """
+    Fill business days based on max_total constraint.
+    Returns days to be filled (without specific values) since Excel template will calculate based on percentages.
+    """
+    days = business_days.copy()
+    random.shuffle(days)
+
+    # Start with estimated number of days
+    estimated_avg_percentage = 0.80
+    max_days_possible = int(max_total / (max_daily * estimated_avg_percentage))
+    max_days_possible = min(max_days_possible, len(days))
+
+    # Try different numbers of days to find the best fit
+    best_num_days = max_days_possible
+    best_total = 0
+
+    # Test a range around our estimate
+    min_test = max(1, max_days_possible - 3)
+    max_test = min(len(days), max_days_possible + 5)
+
+    for test_days in range(min_test, max_test + 1):
+        test_days_to_fill = days[:test_days]
+        test_filled_list = []
+        for d in sorted(test_days_to_fill):
+            test_filled_list.append(
+                {
+                    "Dia": d.day,
+                    "Data": d.strftime("%Y-%m-%d"),
+                    "Dia da Semana": d.strftime("%A"),
+                    "Valor (€)": max_daily,
+                }
+            )
+
+        simulated_total = _simulate_excel_calculation(test_filled_list, max_daily)
+
+        # Find the configuration that gets closest to max_total without exceeding it
+        if simulated_total <= max_total and simulated_total > best_total:
+            best_num_days = test_days
+            best_total = simulated_total
+
+    # Use the best configuration found
+    days_to_fill = days[:best_num_days]
+
     filled_days_list = []
-    for i, d in enumerate(sorted(days)):
+    for d in sorted(days_to_fill):
         filled_days_list.append(
             {
                 "Dia": d.day,
                 "Data": d.strftime("%Y-%m-%d"),
                 "Dia da Semana": d.strftime("%A"),
-                "Valor (€)": values[i],
+                "Valor (€)": max_daily,  # Placeholder value, actual calculation done by Excel template
             }
         )
-    return filled_days_list
 
-
-def random_fill_days(business_days, max_daily, max_total):
-    """
-    Fill business days with random values, respecting the max_daily and max_total constraints.
-    """
-    days = business_days.copy()
-    random.shuffle(days)
-    min_possible = max_daily * 0.5 * len(days)
-    if max_total > min_possible:
-        n = len(days)
-        values = _generate_random_values(n, max_daily, max_total)
-        filled_days_list = _fill_days_with_values(days, values)
-        total = round(sum(d["Valor (€)"] for d in filled_days_list), 2)
-        return filled_days_list, total
-    filled_days_list = []
-    total = 0.0
-    used_values = set()
-    for d in days:
-        if random.random() < 0.7:
-            while True:
-                value = random.gauss(max_daily * 0.8, max_daily * 0.15)
-                value = max(max_daily * 0.5, min(max_daily, value))
-                value = round(value, 2)
-                if value not in used_values:
-                    used_values.add(value)
-                    break
-            filled_days_list.append(
-                {
-                    "Dia": d.day,
-                    "Data": d.strftime("%Y-%m-%d"),
-                    "Dia da Semana": d.strftime("%A"),
-                    "Valor (€)": value,
-                }
-            )
-            total += value
-            if total >= max_total:
-                break
-    if filled_days_list:
-        total = sum(d["Valor (€)"] for d in filled_days_list)
-        remainder = max_total - total
-        i = len(filled_days_list) - 1
-        while remainder > 0.01 and i >= 0:
-            current = filled_days_list[i]["Valor (€)"]
-            addable = min(max_daily - current, remainder)
-            if addable > 0.01:
-                filled_days_list[i]["Valor (€)"] = round(current + addable, 2)
-                remainder -= addable
-            i -= 1
-        filled_days_list = [d for d in filled_days_list if d["Valor (€)"] > 0]
-        total = round(sum(d["Valor (€)"] for d in filled_days_list), 2)
-    return filled_days_list, total
+    # Return the days and the simulated total
+    return filled_days_list, best_total
 
 
 def split_dia_hora(val):
@@ -192,21 +217,15 @@ def export_to_excel(
             break
         row_dict = row[1].to_dict()
         mapping = EXCEL_COLUMN_MAPPING
-        if i == start_row:
-            print("DEBUG: Writing row_dict:", row_dict)
         for col, key in mapping:
             value = row_dict.get(key, "")
             cell = ws[f"{col}{i}"]
-            if i == start_row:
-                print(f"DEBUG: Writing to {col}{i}: {key} = {value}")
             if not isinstance(cell, MergedCell):
                 cell.value = value
         for col, col_name in zip(["K", "L", "M", "N"], ["100%", "75%", "50%", "25%"]):
             cell = ws[f"{col}{i}"]
             if not isinstance(cell, MergedCell):
                 value = row_dict.get(col_name, 0)
-                if i == start_row:
-                    print(f"DEBUG: Writing to {col}{i}: {col_name} = {value}")
                 cell.value = value
     output = BytesIO()
     wb.save(output)
@@ -236,37 +255,51 @@ def group_consecutive_days(filled_days):
     return trips
 
 
-def categorize_trips(trips, max_daily, OBJECTIVES, PARFOIS_ADDRESS):
+def categorize_trips(trips, OBJECTIVES, PARFOIS_ADDRESS):
     """
     Categorize trips into 100%, 75%, 50%, and 25% values.
+    Excel template expects 1s in percentage columns, not actual values.
     """
     filled_days_categorized = []
     trip_id = 0
     for trip in trips:
         n = len(trip)
         for i, d in enumerate(trip):
-            value = max_daily
+            # Keep the original calculated value for reference
+            original_value = d.get("Valor (€)", 0)
             inicio_dia_hora = ""
             regresso_dia_hora = ""
             objetivo = random.choice(OBJECTIVES)
             local = PARFOIS_ADDRESS
+
+            # Initialize all percentage values as empty
+            val_100 = val_75 = val_50 = val_25 = ""
+
             if n == 1:
-                val_100 = value
-                val_75 = val_50 = val_25 = ""
+                # Single day trip gets 100%
+                val_100 = 1
                 inicio_dia_hora = f"{d['Data']} {TRIP_START_TIME}"
                 regresso_dia_hora = f"{d['Data']} {TRIP_END_TIME}"
             else:
                 if i == 0:
-                    val_100 = value
-                    val_75 = val_50 = val_25 = ""
+                    # First day of multi-day trip gets 100%
+                    val_100 = 1
                     inicio_dia_hora = f"{d['Data']} {TRIP_START_TIME}"
+                    # First day: departure time, but still work full day
+                    regresso_dia_hora = f"{d['Data']} {TRIP_END_TIME}"
                 elif i == n - 1:
-                    val_100 = val_75 = val_50 = ""
-                    val_25 = round(value * 0.25, 2)
+                    # Last day of multi-day trip gets 25%
+                    val_25 = 1
+                    # Last day: start working, then return
+                    inicio_dia_hora = f"{d['Data']} {TRIP_START_TIME}"
                     regresso_dia_hora = f"{d['Data']} {TRIP_END_TIME}"
                 else:
-                    val_100 = value
-                    val_75 = val_50 = val_25 = ""
+                    # Middle days of multi-day trip get 100%
+                    val_100 = 1
+                    # Middle days: full working days
+                    inicio_dia_hora = f"{d['Data']} {TRIP_START_TIME}"
+                    regresso_dia_hora = f"{d['Data']} {TRIP_END_TIME}"
+
             filled_days_categorized.append(
                 {
                     **d,
