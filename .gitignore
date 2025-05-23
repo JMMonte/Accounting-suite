@@ -45,6 +45,7 @@ coverage.xml
 
 # Environments
 .env
+.env.*
 .env.local
 .env.*.local
 .venv
@@ -90,4 +91,55 @@ temp/
 tmp/
 
 # Excel output files (may contain sensitive data)
-MapaDespesas_*.xlsx 
+MapaDespesas_*.xlsx
+
+# SECURITY: Personal data and sensitive files
+# Environment files (all variants)
+.env*
+!.env.example
+secrets.*
+secret.*
+*.secret
+*.secrets
+
+# Private configuration
+constants_private.py
+config_private.py
+personal_constants.py
+
+# Authentication and keys
+*.key
+*.pem
+*.p12
+*.pfx
+auth_config.py
+credentials.json
+token.json
+
+# Database files that might contain personal data
+*.sqlite
+*.sqlite3
+*.db
+
+# Backup files that might expose history
+*.bak
+*.backup
+backup_*
+
+# Personal Excel templates (replace with anonymized versions)
+*_Personal_*.xls*
+*_Privado_*.xls*
+
+# Log files that might contain sensitive data
+*.log
+logs/
+log/
+
+# Any file with "personal" or "private" in name
+*personal*
+*private*
+*confidential*
+
+# Git cleanup scripts (contain sensitive patterns)
+clean_git_history*.sh
+sanitize_*.py 
