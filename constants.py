@@ -1,3 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 OBJECTIVES = [
     "Viagem a visitar cliente Parfois (HQ)",
     "Reunião com cliente Parfois",
@@ -10,13 +16,24 @@ PARFOIS_ADDRESS = "Parfois S.A., Rua de Sistelo, 755 - Lugar de Santegãos, 4435
 
 EXCEL_TEMPLATE_PATH = "MG_AjudasCustoNacionais_Original_V2025.xlsx"
 EXCEL_OUTPUT_NAME = "MapaDespesasPreenchido.xlsx"
-COMPANY_NAME = "Your Company Name"
-COMPANY_NIPC = "000000000"
-COMPANY_ADDRESS = "Your Company Address"
-GESTOR_NAME = "Your Name"
-GESTOR_ADDRESS = "Your Address"
-GESTOR_NIFPS = "000000000"
-GESTOR_CATEGORIA = "Gestor"
+
+# Private information loaded from environment variables
+COMPANY_NAME = os.getenv("COMPANY_NAME", "Your Company Name")
+COMPANY_NIPC = os.getenv("COMPANY_NIPC", "000000000")
+COMPANY_ADDRESS = os.getenv("COMPANY_ADDRESS", "Your Company Address")
+GESTOR_NAME = os.getenv("GESTOR_NAME", "Your Name")
+GESTOR_ADDRESS = os.getenv("GESTOR_ADDRESS", "Your Address")
+GESTOR_NIFPS = os.getenv("GESTOR_NIFPS", "000000000")
+GESTOR_CATEGORIA = os.getenv("GESTOR_CATEGORIA", "Gestor")
+
+# Authentication credentials from environment variables
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "default_admin_password")
+GESTOR_USERNAME = os.getenv("GESTOR_USERNAME", "gestor")
+GESTOR_PASSWORD = os.getenv("GESTOR_PASSWORD", "default_gestor_password")
+
+# Application settings from environment variables
+SESSION_TIMEOUT = int(os.getenv("SESSION_TIMEOUT", "3600"))  # 1 hour default
 
 EXCEL_START_ROW = 11
 EXCEL_MAX_ROW = 35

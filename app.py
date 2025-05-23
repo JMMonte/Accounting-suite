@@ -29,7 +29,10 @@ from constants import (
     MAX_TOTAL_MIN,
     MAX_TOTAL_MAX,
     MAX_TOTAL_DEFAULT,
+    ADMIN_PASSWORD,
+    GESTOR_PASSWORD,
 )
+
 # Import authentication and audit modules
 import auth
 import audit_log
@@ -41,6 +44,28 @@ st.set_page_config(page_title="Mapa de Despesas Automático", layout="centered")
 auth.require_auth()
 
 st.title("Mapa de Despesas Automático - Ajudas de Custo Nacionais")
+
+# --- Check for placeholder data and warn user ---
+if (
+    COMPANY_NAME == "Your Company Name"
+    or COMPANY_NIPC == "000000000"
+    or GESTOR_NAME == "Your Name"
+    or ADMIN_PASSWORD == "default_admin_password"
+    or GESTOR_PASSWORD == "default_gestor_password"
+):
+    st.error(
+        """
+    ⚠️ **Configuração Necessária**: Dados da empresa e/ou autenticação não configurados!
+    
+    Esta aplicação está a usar dados de exemplo. Para usar os seus dados reais:
+    1. Edite o ficheiro `.env` na raiz do projeto
+    2. Configure as suas variáveis de ambiente reais (empresa e autenticação)
+    3. Reinicie a aplicação
+    
+    Consulte o `README_Setup.md` para instruções detalhadas.
+    """
+    )
+    st.stop()
 
 # --- Display user info in sidebar ---
 auth.display_user_info()
@@ -115,7 +140,7 @@ if user_role == "Administrador":
         min_value=MAX_TOTAL_MIN,
         max_value=MAX_TOTAL_MAX * 3,  # Admin can set higher totals
         value=MAX_TOTAL_DEFAULT,
-        help="🔑 Como administrador, pode definir totais mais elevados."
+        help="🔑 Como administrador, pode definir totais mais elevados.",
     )
 else:
     max_total = st.sidebar.number_input(
@@ -149,7 +174,7 @@ with st.sidebar.expander("Dados da Empresa e Gestor", expanded=False):
         gestor_nifps = GESTOR_NIFPS
         gestor_categoria = GESTOR_CATEGORIA
         signature_file = None
-        
+
         # Display read-only info
         st.text_input("Nome da Empresa", value=COMPANY_NAME, disabled=True)
         st.text_input("NIPC da Empresa", value=COMPANY_NIPC, disabled=True)
@@ -182,9 +207,7 @@ filled_dict = {d["Data"]: d for d in filled_days}
 
 # --- Step: Aggregate consecutive filled business days into trips ---
 trips = group_consecutive_days(filled_days)
-filled_days_categorized = categorize_trips(
-    trips, OBJECTIVES, PARFOIS_ADDRESS
-)
+filled_days_categorized = categorize_trips(trips, OBJECTIVES, PARFOIS_ADDRESS)
 
 filled_dict = {d["Data"]: d for d in filled_days_categorized}
 
@@ -196,7 +219,12 @@ count_50 = sum(1 for d in filled_days_categorized if d.get("Valor 50% (€)", ""
 count_25 = sum(1 for d in filled_days_categorized if d.get("Valor 25% (€)", "") == 1)
 
 # Calculate total exactly as Excel template does
-excel_total = (count_100 * max_daily * 1.0) + (count_75 * max_daily * 0.75) + (count_50 * max_daily * 0.50) + (count_25 * max_daily * 0.25)
+excel_total = (
+    (count_100 * max_daily * 1.0)
+    + (count_75 * max_daily * 0.75)
+    + (count_50 * max_daily * 0.50)
+    + (count_25 * max_daily * 0.25)
+)
 excel_total = round(excel_total, 2)
 
 # Use Excel calculation for consistency
@@ -302,16 +330,18 @@ excel_bytes = export_to_excel(
     max_daily,
 )
 
+
 # Download button with audit logging
 def on_download():
     audit_log.log_excel_download(output_file_name)
+
 
 download_clicked = st.download_button(
     label="📥 Download Excel preenchido",
     data=excel_bytes,
     file_name=output_file_name,
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    help=f"Descarregar o ficheiro Excel com o mapa de despesas para {month:02d}/{year}"
+    help=f"Descarregar o ficheiro Excel com o mapa de despesas para {month:02d}/{year}",
 )
 
 # Log download if button was clicked

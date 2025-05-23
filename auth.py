@@ -2,6 +2,13 @@ import hashlib
 import time
 from typing import Optional, Tuple
 import streamlit as st
+from constants import (
+    ADMIN_USERNAME,
+    ADMIN_PASSWORD,
+    GESTOR_USERNAME,
+    GESTOR_PASSWORD,
+    SESSION_TIMEOUT,
+)
 
 
 def hash_password(password: str) -> str:
@@ -15,10 +22,10 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 
 def get_user_credentials() -> dict:
-    """Get user credentials from secrets."""
+    """Get user credentials from environment variables."""
     return {
-        "admin": st.secrets["auth"]["admin_password"],
-        "gestor": st.secrets["auth"]["gestor_password"],
+        ADMIN_USERNAME: ADMIN_PASSWORD,
+        GESTOR_USERNAME: GESTOR_PASSWORD,
     }
 
 
@@ -32,7 +39,7 @@ def authenticate_user(username: str, password: str) -> bool:
 
 def get_user_role(username: str) -> str:
     """Get user role based on username."""
-    roles = {"admin": "Administrador", "gestor": "Gestor"}
+    roles = {ADMIN_USERNAME: "Administrador", GESTOR_USERNAME: "Gestor"}
     return roles.get(username, "Utilizador")
 
 
@@ -72,16 +79,11 @@ def is_session_valid() -> bool:
     if not st.session_state.get("authenticated", False):
         return False
 
-    # Check session timeout
-    try:
-        session_timeout = st.secrets["app"]["session_timeout"]
-    except KeyError:
-        session_timeout = 3600  # 1 hour default
-
+    # Check session timeout using environment variable
     login_time = st.session_state.get("login_time", 0)
     current_time = time.time()
 
-    if current_time - login_time > session_timeout:
+    if current_time - login_time > SESSION_TIMEOUT:
         logout_user()
         return False
 

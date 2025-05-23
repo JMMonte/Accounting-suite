@@ -45,6 +45,8 @@ coverage.xml
 
 # Environments
 .env
+.env.local
+.env.*.local
 .venv
 env/
 venv/
@@ -58,6 +60,12 @@ venv.bak/
 
 # Audit logs (sensitive data)
 audit_log.json
+
+# Private/Personal configuration files
+config.py
+private_config.py
+personal_data.py
+setup_env.py
 
 # IDE
 .vscode/
