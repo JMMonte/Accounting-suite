@@ -25,7 +25,7 @@ def save_audit_log(log_entries: list):
     try:
         with open(AUDIT_LOG_FILE, 'w', encoding='utf-8') as f:
             json.dump(log_entries, f, ensure_ascii=False, indent=2)
-    except Exception as e:
+    except (IOError, OSError) as e:
         st.error(f"Erro ao guardar log de auditoria: {e}")
 
 

@@ -1,3 +1,11 @@
+# app.py
+"""
+This file contains the main Streamlit application for the Map of Expenses Auto-filler.
+
+It handles user authentication, configuration options, data generation, and Excel export.
+"""
+
+# Standard library imports
 import random
 from datetime import datetime, date, timedelta
 from workalendar.europe import Portugal

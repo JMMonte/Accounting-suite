@@ -11,4 +11,9 @@ dependencies = [
     "workalendar",
     "python-dotenv"
 ]
+
+[dependency-groups]
+dev = [
+    "pylint>=3.3.7",
+]
  
