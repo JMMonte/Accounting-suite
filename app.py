@@ -240,8 +240,9 @@ for d in all_days:
     data_str = d.strftime("%Y-%m-%d")
     filled = filled_dict.get(data_str)
     if filled:
-        objetivo = random.choice(OBJECTIVES)
-        local = CLIENT_ADDRESS
+        # Use the already assigned objective and location from categorize_trips
+        objetivo = filled.get("Mapa deslocação / Objectivo", "")
+        local = filled.get("Local onde foram prestados", "")
         inicio = filled.get("inicio (Dia Hora)", "")
         regresso = filled.get("regresso (Dia Hora)", "")
         valor_100 = filled.get("Valor 100% (€)", "")
@@ -258,10 +259,10 @@ for d in all_days:
             "Início Hora": inicio_hora,
             "Regresso Dia": regresso_dia,
             "Regresso Hora": regresso_hora,
-            "100%": 1 if valor_100 != "" else 0,
-            "75%": 1 if valor_75 != "" else 0,
-            "50%": 1 if valor_50 != "" else 0,
-            "25%": 1 if valor_25 != "" else 0,
+            "100%": 1 if valor_100 == 1 else 0,
+            "75%": 1 if valor_75 == 1 else 0,
+            "50%": 1 if valor_50 == 1 else 0,
+            "25%": 1 if valor_25 == 1 else 0,
             "_gray": False,
         }
         preview_rows.append(row)
@@ -315,7 +316,8 @@ st.write(
 st.write(f"**Sub Total a Pagar:** {sub_total:.2f} €")
 
 # --- Excel Export Functionality ---
-output_file_name = f"MapaDespesas_{year:04d}_{month:02d}_{company_nipc}.xlsx"
+month_name = datetime(year, month, 1).strftime("%B")  # Get full month name
+output_file_name = f"MapaDespesas_{year:04d}_{month_name}_{company_nipc}.xlsx"
 excel_bytes = export_to_excel(
     EXCEL_TEMPLATE_PATH,
     preview_df.drop(columns=["_gray"]),
